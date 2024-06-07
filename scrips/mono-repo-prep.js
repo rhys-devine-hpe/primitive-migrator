@@ -203,11 +203,11 @@ const mergeReposAndCreatePR$ = (repo) => cloneRepo$('https://github.com/rhys-dev
 const doYaThing$ = ([key, { repo }]) => cloneRepo$(repo).pipe(
     switchMap(() => moveFiles$(key)),
     switchMap(() => commitAndPush$(key)),
-    // switchMap(() => mergeReposAndCreatePR$(repo)),
+    switchMap(() => mergeReposAndCreatePR$(repo)),
 );
 
 /**
- * 
+ * Main Ops
  */
 const ops$ = Object.entries(repos).map(doYaThing$)
 concat(...ops$)
