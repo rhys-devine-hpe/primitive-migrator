@@ -102,13 +102,22 @@ const moveFiles$ = (package) => {
     const mvReadme$ = () => exec$(moveCmd('readme.md'))
     const mvTSConfig$ = () => exec$(moveCmd('tsconfig.json'))
     const mvStencilConfig$ = () => exec$(moveCmd('stencil.config.ts'))
+    const mvSrc$ = () => exec$(moveCmd('src'))
+    const mvUtils$ = () => exec$(moveCmd('utils'))
+    const mvStorybook$ = () => exec$(moveCmd('.storybook'))
 
-    const removeCmd = (file) => `cd ${package} && rm ${file}`;
+    const removeCmd = (file) => `cd ${package} && rm -rf ${file}`;
     const removeCopyrightignore$ = () => exec$(removeCmd('.copyrightignore'))
     const removeGitIgnore$ = () => exec$(removeCmd('.gitignore'))
     const removeNPMRC$ = () => exec$(removeCmd('.npmrc'))
     const removePrettierIgnore$ = () => exec$(removeCmd('.prettierignore'))
+    const removeEslintIgnore$ = () => exec$(removeCmd('.eslintignore'))
+    const removePrettierJson$ = () => exec$(removeCmd('.prettierrc.json'))
+    const removeEslintJson$ = () => exec$(removeCmd('.eslintrc.json'))
     const removeCodeowners$ = () => exec$(removeCmd('CODEOWNERS'))
+    const removeGithub$ = () => exec$(removeCmd('.github'))
+    const removePackageLock$ = () => exec$(removeCmd('package-lock.json'))
+    const removeMakeFile$ = () => exec$(removeCmd('Makefile'))
 
     return mkdirPackagesDir$().pipe(
         // Moves
@@ -119,6 +128,9 @@ const moveFiles$ = (package) => {
         switchMap(mvReadme$),
         switchMap(mvTSConfig$),
         switchMap(mvStencilConfig$),
+        switchMap(mvSrc$),
+        switchMap(mvUtils$),
+        switchMap(mvStorybook$),
 
         // Remove
         switchMap(removeCopyrightignore$),
@@ -126,6 +138,12 @@ const moveFiles$ = (package) => {
         switchMap(removeNPMRC$),
         switchMap(removePrettierIgnore$),
         switchMap(removeCodeowners$),
+        switchMap(removeGithub$),
+        switchMap(removePackageLock$),
+        switchMap(removePrettierJson$),
+        switchMap(removeEslintJson$),
+        switchMap(removeEslintIgnore$),
+        switchMap(removeMakeFile$),
     )
 }
 
