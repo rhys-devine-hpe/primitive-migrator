@@ -1,8 +1,9 @@
-const { from, switchMap, concat, toArray, catchError, of, tap } = require('rxjs');
+const { from, switchMap, concat, toArray, catchError, of, tap, map } = require('rxjs');
+const fs = require('fs').promises;
 const path = require('path');
 const util = require('node:util');
 const exec = util.promisify(require('node:child_process').exec);
-const BranchName = 'mono-test-4';
+const BranchName = 'mono-test-7';
 
 /**
  * Exec
@@ -100,8 +101,8 @@ const moveFiles$ = (package) => {
     const mvPackage$ = () => exec$(moveCmd('package.json'))
     const mvPackageLock$ = () => exec$(moveCmd('package-lock.json'))
     const mvReadme$ = () => exec$(moveCmd('readme.md'))
-    const mvTSConfig$ = () => exec$(moveCmd('tsconfig.json'))
-    const mvStencilConfig$ = () => exec$(moveCmd('stencil.config.ts'))
+    // const mvTSConfig$ = () => exec$(moveCmd('tsconfig.json'))
+    // const mvStencilConfig$ = () => exec$(moveCmd('stencil.config.ts'))
 
     const removeCmd = (file) => `cd ${package} && rm ${file}`;
     const removeCopyrightignore$ = () => exec$(removeCmd('.copyrightignore'))
@@ -117,8 +118,12 @@ const moveFiles$ = (package) => {
         switchMap(mvPackage$),
         switchMap(mvPackageLock$),
         switchMap(mvReadme$),
-        switchMap(mvTSConfig$),
-        switchMap(mvStencilConfig$),
+        // switchMap(mvTSConfig$),
+        // switchMap(mvStencilConfig$),
+
+        // Apply base file
+        switchMap(() => applySetncilBaseFile$(package)),
+        switchMap(() => applyTSBaseFile$(package)),
 
         // Remove
         switchMap(removeCopyrightignore$),
@@ -126,6 +131,29 @@ const moveFiles$ = (package) => {
         switchMap(removeNPMRC$),
         switchMap(removePrettierIgnore$),
         switchMap(removeCodeowners$),
+    )
+}
+
+/**
+ * Apply Generic Files
+ * @param {*} package 
+ */
+const applySetncilBaseFile$ = (package) => {
+    const setncilBaseConfig$ = from(fs.readFile('./base-files/stencil.config.ts', "utf8"));
+    return setncilBaseConfig$.pipe(
+        map((config) => config.replace(`{{plugingName}}`, package)),
+        switchMap((config) => from(fs.writeFile(`${package}/packages/${package}/stencil.config.ts`, config, 'utf8')))
+    )
+}
+
+/**
+ * Apply Generic Files
+ * @param {*} package 
+ */
+const applyTSBaseFile$ = (package) => {
+    const setncilBaseConfig$ = from(fs.readFile('./base-files/tsconfig.json', "utf8"));
+    return setncilBaseConfig$.pipe(
+        switchMap((config) => from(fs.writeFile(`${package}/packages/${package}/tsconfig.json`, config, 'utf8')))
     )
 }
 
@@ -156,7 +184,7 @@ const mergeReposAndCreatePR$ = (repo) => cloneRepo$('https://github.com/rhys-dev
     switchMap(() => exec$(`cd primitive-components && git fetch repo2 --tags`)),
     switchMap(() => exec$(`cd primitive-components && git merge --allow-unrelated-histories repo2/${BranchName} -m "Commit Message" --no-ff`)),
     // switchMap(() => exec$(`cd primitive-components && git remote rm repo2`)),
-   
+
     // // Add, Commit, Branch
     switchMap(() => exec$(`cd primitive-components && git add .`)),
     switchMap(() => exec$(`cd primitive-components && git commit -m 'mono repo prep'`)),
@@ -178,6 +206,9 @@ const doYaThing$ = ([key, { repo }]) => cloneRepo$(repo).pipe(
     switchMap(() => mergeReposAndCreatePR$(repo)),
 );
 
+/**
+ * Main Ops
+ */
 const ops$ = Object.entries(repos).map(doYaThing$)
 concat(...ops$)
     .pipe(toArray())
